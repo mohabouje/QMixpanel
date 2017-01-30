@@ -1,0 +1,12 @@
+#ifndef QMIXPANEL_GLOBAL_H
+#define QMIXPANEL_GLOBAL_H
+
+#include <QtCore/qglobal.h>
+
+#if defined(QMIXPANEL_LIBRARY)
+#  define QMIXPANELSHARED_EXPORT Q_DECL_EXPORT
+#else
+#  define QMIXPANELSHARED_EXPORT Q_DECL_IMPORT
+#endif
+
+#endif // QMIXPANEL_GLOBAL_H
