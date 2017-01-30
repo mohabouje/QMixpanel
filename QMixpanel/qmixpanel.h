@@ -3,11 +3,9 @@
 
 #include "qmixpanel_global.h"
 
-class QMIXPANELSHARED_EXPORT QMixpanel
-{
-
+class QMIXPANELSHARED_EXPORT QMixpanel {
 public:
-    QMixpanel();
+    QMixpanel() { }
 };
 
 #endif // QMIXPANEL_H

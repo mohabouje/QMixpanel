@@ -1,9 +1,11 @@
 #ifndef QMIXPANELPROFILE_H
 #define QMIXPANELPROFILE_H
 
+#include "qmixpanel_global.h"
+
 #include <QObject>
 
-class QMixpanelProfile : public QObject {
+class QMIXPANELSHARED_EXPORT QMixpanelProfile : public QObject {
     Q_OBJECT
     Q_PROPERTY(QString $name READ name WRITE setName)
     Q_PROPERTY(QString $first_name READ firstName WRITE setFirstName)
