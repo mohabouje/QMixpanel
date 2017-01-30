@@ -17,7 +17,8 @@ SOURCES += qmixpanel.cpp
 
 HEADERS += qmixpanel.h\
         qmixpanel_global.h \
-    util.h
+    util.h \
+    qmixpanelprofile.h
 
 unix {
     target.path = /usr/lib
