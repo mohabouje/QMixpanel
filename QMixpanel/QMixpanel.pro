@@ -26,4 +26,5 @@ unix {
 }
 
 SOURCES += \
-    qmixpanel.cpp
+    qmixpanel.cpp \
+    util.cpp
