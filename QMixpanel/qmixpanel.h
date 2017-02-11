@@ -1,52 +1,50 @@
 #ifndef QMIXPANEL_H
 #define QMIXPANEL_H
 
-#include "qmixpanel_global.h"
-#include "qmixpanelevent.h"
-#include "qmixpanelprofile.h"
-
+#include <QNetworkReply>
 #include <QObject>
+#include <QSet>
 
-
-
-
-
-class QMIXPANELSHARED_EXPORT QMixpanel : public QObject {
+class QMixpanelProfile;
+class QMixpanelEvent;
+class QMixpanel : public QObject {
     Q_OBJECT
 public:
     static QMixpanel* instance(QObject* object = Q_NULLPTR);
 
+    inline QString token() const { return _token; }
+    inline QString distinctId() const { return _distinctId;}
+    inline bool isSyncingEvents() const { return _isSyncingEvents; }
+    inline bool isSyncingProfiles() const { return _isSyncingProfiles; }
+
     void insertProfile(const QMixpanelProfile& profile, bool instantSync = false);
     void insertEvent(const QMixpanelEvent& event, bool instantSync = false);
-
-    QString token() const;
     void setToken(const QString &token);
-
-    QString distinctId() const;
     void setDistinctId(const QString &distinctId);
 
 private slots:
     void flushEvents();
     void flushProfiles();
 private:
-    typedef QSet<QMixpanelProfile> ProfileSet;
-    typedef QSet<QMixpanelEvent>   EventSet;
+    using ProfilesContainer = QSet<const QMixpanelProfile*>;
+    using EventsContainer = QSet<const QMixpanelEvent*>;
 
     explicit QMixpanel(QObject* object = Q_NULLPTR);
     static QMixpanel*   _instance;
     static const int MaxEventCount = 50;
-    bool            _isSyncingEvents;
-    bool            _isSyncingProfiles;
-    QString         _token;
-    QString         _distinctId;
-    ProfileSet      _profileSet;
-    EventSet        _eventSet;
+
+    bool                    _isSyncingEvents;
+    bool                    _isSyncingProfiles;
+    QString                 _token;
+    QString                 _distinctId;
+    ProfilesContainer       _profileSet;
+    EventsContainer         _eventSet;
 
 
 
     void postEventHelper(const QMixpanelEvent &event);
     void postProfileHelper(const QMixpanelProfile &event);
-    void networkReplyHelper(const QString& API, const QJsonObject& data);
+    QNetworkReply *networkReplyHelper(const QString& API, const QJsonObject& data);
 };
 
 
