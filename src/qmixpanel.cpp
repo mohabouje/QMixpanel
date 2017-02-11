@@ -7,6 +7,7 @@
 #include <QMetaProperty>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
+#include <QTimer>
 
 namespace JsonHelper {
 
@@ -73,29 +74,29 @@ QMixpanel *QMixpanel::instance(QObject *object) {
     return _instance;
 }
 
-QMixpanel::QMixpanel(QObject* object) : QObject(object) {
-
+QMixpanel::QMixpanel(QObject* object) :
+    QObject(object),
+    _timer(new QTimer(object))
+{
+    _timer->setInterval(30000);
+    _timer->setSingleShot(false);
+    connect(_timer, &QTimer::timeout, this, &QMixpanel::flushEvents);
+    connect(_timer, &QTimer::timeout, this, &QMixpanel::flushProfiles);
 }
 
-void QMixpanel::insertProfile(const QMixpanelProfile &profile, bool instantSync) {
-    if (instantSync) {
-        postProfileHelper(profile);
-    } else {
-        _profileSet.insert(&profile);
-    }
+bool QMixpanel::insertProfile(const QMixpanelProfile &profile, bool instantSync) {
+    return instantSync ? postProfileHelper(profile) : (_profileSet.insert(&profile) != _profileSet.end());
 }
 
-void QMixpanel::insertEvent(const QMixpanelEvent &event, bool instantSync) {
-    if (instantSync) {
-        postEventHelper(event);
-    } else {
-        _eventSet.insert(&event);
-    }
+bool QMixpanel::insertEvent(const QMixpanelEvent &event, bool instantSync) {
+    return instantSync ? postEventHelper(event) : (_eventSet.insert(&event) != _eventSet.end());
 }
-
-
 
 void QMixpanel::flushProfiles() {
+    if (_profileSet.size() < MaxEventCount || !_isSyncingProfiles) {
+        return;
+    }
+
     _isSyncingProfiles = true;
     const ProfilesContainer tmp = _profileSet;
     const QJsonArray array = JsonHelper::ObjectSetToJsonArray<QMixpanelProfile>(tmp);
@@ -119,6 +120,10 @@ void QMixpanel::flushProfiles() {
 
 
 void QMixpanel::flushEvents() {
+    if (_eventSet.size() < MaxEventCount || !_isSyncingEvents) {
+        return;
+    }
+
     _isSyncingEvents = true;
     const EventsContainer tmp = _eventSet;
     const QJsonArray array = JsonHelper::ObjectSetToJsonArray<QMixpanelEvent>(tmp);
@@ -140,7 +145,7 @@ void QMixpanel::flushEvents() {
     });
 }
 
-void QMixpanel::postProfileHelper(const QMixpanelProfile& profile) {
+bool QMixpanel::postProfileHelper(const QMixpanelProfile& profile) {
     const QJsonObject obj = JsonHelper::ObjectToJsonObject(&profile);
     QNetworkReply* reply = networkReplyHelper(EngineApi, obj);
 
@@ -155,9 +160,10 @@ void QMixpanel::postProfileHelper(const QMixpanelProfile& profile) {
         Q_UNUSED(error);
         reply->deleteLater();
     });
+    return reply->isRunning() || reply->isFinished();
 }
 
-void QMixpanel::postEventHelper(const QMixpanelEvent& event) {
+bool QMixpanel::postEventHelper(const QMixpanelEvent& event) {
     const QJsonObject obj = JsonHelper::ObjectToJsonObject(&event);
     QNetworkReply* reply = networkReplyHelper(TrackApi, obj);
 
@@ -172,6 +178,7 @@ void QMixpanel::postEventHelper(const QMixpanelEvent& event) {
         Q_UNUSED(error);
         reply->deleteLater();
     });
+    return reply->isRunning() || reply->isFinished();
 }
 
 

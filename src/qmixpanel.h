@@ -4,6 +4,7 @@
 #include <QNetworkReply>
 #include <QObject>
 #include <QSet>
+#include <QTimer>
 
 class QMixpanelProfile;
 class QMixpanelEvent;
@@ -16,10 +17,11 @@ public:
 
     inline bool isSyncingEvents() const { return _isSyncingEvents; }
     inline bool isSyncingProfiles() const { return _isSyncingProfiles; }
+    inline QTimer *timer() const { return _timer; }
 
 public slots:
-    void insertProfile(const QMixpanelProfile& profile, bool instantSync = false);
-    void insertEvent(const QMixpanelEvent& event, bool instantSync = false);
+    bool insertProfile(const QMixpanelProfile& profile, bool instantSync = false);
+    bool insertEvent(const QMixpanelEvent& event, bool instantSync = false);
 
 private slots:
     void flushEvents();
@@ -37,10 +39,10 @@ private:
     bool                    _isSyncingProfiles;
     ProfilesContainer       _profileSet;
     EventsContainer         _eventSet;
+    QTimer*                 _timer;
 
-
-    void postEventHelper(const QMixpanelEvent &event);
-    void postProfileHelper(const QMixpanelProfile &event);
+    bool postEventHelper(const QMixpanelEvent &event);
+    bool postProfileHelper(const QMixpanelProfile &event);
     QNetworkReply *networkReplyHelper(const QString& API, const QJsonObject& data);
 };
 
