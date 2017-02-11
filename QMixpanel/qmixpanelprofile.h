@@ -3,6 +3,7 @@
 
 #include "qmixpanelevent.h"
 
+#include <QDateTime>
 #include <QObject>
 #include <QVariantMap>
 class QMixpanelProfile : public QMixpanelEvent {
@@ -19,12 +20,14 @@ public:
     inline QString lastName() const { return _properties.value("$last_name").toString(); }
     inline QString email() const { return _properties.value("$email").toString(); }
     inline QString phone() const { return _properties.value("$phone").toString(); }
+    inline QDateTime creationDate() const { return QDateTime::fromString(_properties.value("$created").toString(), Qt::ISODate); }
 
     void setName(const QString& name) { _properties.insert("$name", name); }
     void setFirstName(const QString& firstName) { _properties.insert("$first_name", firstName); }
     void setLastName(const QString& lastName) { _properties.insert("$last_name", lastName); }
     void setEmail(const QString& email) { _properties.insert("$email", email); }
     void setPhone(const QString& phone) { _properties.insert("$phone", phone); }
+    void setCreationDate(const QDateTime& dateTime) { _properties.insert("$created", dateTime.toString(Qt::ISODate)); }
 };
 
 #endif // QMIXPANELPROFILE_H
