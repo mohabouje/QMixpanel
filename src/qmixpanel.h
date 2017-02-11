@@ -17,11 +17,15 @@ public:
 
     inline bool isSyncingEvents() const { return _isSyncingEvents; }
     inline bool isSyncingProfiles() const { return _isSyncingProfiles; }
+    inline QString token() const { return _token; }
+    inline QString distinctId() const { return _distinctId; }
     inline QTimer *timer() const { return _timer; }
 
+    void setToken(const QString &token);
+    void setDistinctId(const QString &distinctId);
 public slots:
-    bool insertProfile(const QMixpanelProfile& profile, bool instantSync = false);
-    bool insertEvent(const QMixpanelEvent& event, bool instantSync = false);
+    bool insertProfile(QMixpanelProfile* profile, bool instantSync = false, bool validate = true);
+    bool insertEvent(QMixpanelEvent* event, bool instantSync = false, bool validate = true);
 
 private slots:
     void flushEvents();
@@ -35,14 +39,16 @@ private:
     static QMixpanel*   _instance;
     static const int MaxEventCount = 50;
 
+    QString                 _token;
+    QString                 _distinctId;
     bool                    _isSyncingEvents;
     bool                    _isSyncingProfiles;
     ProfilesContainer       _profileSet;
     EventsContainer         _eventSet;
     QTimer*                 _timer;
 
-    bool postEventHelper(const QMixpanelEvent &event);
-    bool postProfileHelper(const QMixpanelProfile &event);
+    bool postEventHelper(const QMixpanelEvent *event);
+    bool postProfileHelper(const QMixpanelProfile *profile);
     QNetworkReply *networkReplyHelper(const QString& API, const QJsonObject& data);
 };
 

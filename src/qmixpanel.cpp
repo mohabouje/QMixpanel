@@ -84,14 +84,34 @@ QMixpanel::QMixpanel(QObject* object) :
     connect(_timer, &QTimer::timeout, this, &QMixpanel::flushProfiles);
 }
 
-bool QMixpanel::insertProfile(const QMixpanelProfile &profile, bool instantSync) {
-    const bool success = instantSync ? postProfileHelper(profile) : (_profileSet.insert(&profile) != _profileSet.end());
+void QMixpanel::setDistinctId(const QString &distinctId)
+{
+    _distinctId = distinctId;
+}
+
+void QMixpanel::setToken(const QString &token)
+{
+    _token = token;
+}
+
+bool QMixpanel::insertProfile(QMixpanelProfile* profile, bool instantSync, bool validate) {
+    if (validate) {
+        profile->setDistinctId(distinctId());
+        profile->setToken(token());
+    }
+
+    const bool success = instantSync ? postProfileHelper(profile) : (_profileSet.insert(profile) != _profileSet.end());
     flushProfiles();
     return success;
 }
 
-bool QMixpanel::insertEvent(const QMixpanelEvent &event, bool instantSync) {
-    const bool success = instantSync ? postEventHelper(event) : (_eventSet.insert(&event) != _eventSet.end());
+bool QMixpanel::insertEvent(QMixpanelEvent* event, bool instantSync, bool validate) {
+    if (validate) {
+        event->setDistinctId(distinctId());
+        event->setToken(token());
+    }
+
+    const bool success = instantSync ? postEventHelper(event) : (_eventSet.insert(event) != _eventSet.end());
     flushEvents();
     return success;
 }
@@ -149,8 +169,8 @@ void QMixpanel::flushEvents() {
     });
 }
 
-bool QMixpanel::postProfileHelper(const QMixpanelProfile& profile) {
-    const QJsonObject obj = JsonHelper::ObjectToJsonObject(&profile);
+bool QMixpanel::postProfileHelper(const QMixpanelProfile* profile) {
+    const QJsonObject obj = JsonHelper::ObjectToJsonObject(profile);
     QNetworkReply* reply = networkReplyHelper(EngineApi, obj);
 
     connect(reply, &QNetworkReply::finished, [&, reply]() {
@@ -167,8 +187,8 @@ bool QMixpanel::postProfileHelper(const QMixpanelProfile& profile) {
     return reply->isRunning() || reply->isFinished();
 }
 
-bool QMixpanel::postEventHelper(const QMixpanelEvent& event) {
-    const QJsonObject obj = JsonHelper::ObjectToJsonObject(&event);
+bool QMixpanel::postEventHelper(const QMixpanelEvent* event) {
+    const QJsonObject obj = JsonHelper::ObjectToJsonObject(event);
     QNetworkReply* reply = networkReplyHelper(TrackApi, obj);
 
     connect(reply, &QNetworkReply::finished, [reply]() {
