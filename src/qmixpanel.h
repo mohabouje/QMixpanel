@@ -57,8 +57,8 @@ class QMixpanelEvent : public QObject {
 public:
     explicit QMixpanelEvent(QObject *parent = 0) : QObject(parent) {}
     inline qlonglong time() const { return _time; }
-    inline QString event() const { return _event; }
     inline QVariantMap properties() const {  return _properties; }
+    inline QString event() const { return _event; }
     inline QString token() const { return _token; }
     inline QString distinctId() const { return _distinctId; }
     inline bool operator==(const QMixpanelEvent& other) const {

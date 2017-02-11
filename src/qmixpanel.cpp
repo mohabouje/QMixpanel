@@ -85,11 +85,15 @@ QMixpanel::QMixpanel(QObject* object) :
 }
 
 bool QMixpanel::insertProfile(const QMixpanelProfile &profile, bool instantSync) {
-    return instantSync ? postProfileHelper(profile) : (_profileSet.insert(&profile) != _profileSet.end());
+    const bool success = instantSync ? postProfileHelper(profile) : (_profileSet.insert(&profile) != _profileSet.end());
+    flushProfiles();
+    return success;
 }
 
 bool QMixpanel::insertEvent(const QMixpanelEvent &event, bool instantSync) {
-    return instantSync ? postEventHelper(event) : (_eventSet.insert(&event) != _eventSet.end());
+    const bool success = instantSync ? postEventHelper(event) : (_eventSet.insert(&event) != _eventSet.end());
+    flushEvents();
+    return success;
 }
 
 void QMixpanel::flushProfiles() {
