@@ -14,10 +14,7 @@ TEMPLATE = lib
 DEFINES += QMIXPANEL_LIBRARY
 
 
-HEADERS += qmixpanel.h\
-    util.h \
-    qmixpanelprofile.h \
-    qmixpanelevent.h
+HEADERS += qmixpanel.h
 
 unix {
     target.path = /usr/lib

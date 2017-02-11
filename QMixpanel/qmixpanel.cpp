@@ -1,17 +1,69 @@
 #include "qmixpanel.h"
 
-#include "qmixpanelevent.h"
-#include "qmixpanelprofile.h"
-#include "util.h"
-
 #include <QJsonArray>
+#include <QJsonObject>
 #include <QJsonDocument>
+#include <QMetaObject>
+#include <QMetaProperty>
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 
-#define API_ENTRY_ENGINE "http://api.mixpanel.com/engine/?data="
-#define API_ENTRY_TRACK "http://api.mixpanel.com/track/?data="
+namespace JsonHelper {
 
+    static QJsonObject ObjectToJsonObject(const QObject* object, const QStringList &ignoredProperties = QStringList()) {
+        QJsonObject json;
+        const QMetaObject *metaobject = object->metaObject();
+        const int count = metaobject->propertyCount();
+        for (int i=0; i<count; i++) {
+            const QMetaProperty metaproperty = metaobject->property(i);
+            const char *name = metaproperty.name();
+            const QLatin1String field = QLatin1String(name);
+            if (ignoredProperties.contains(field) || (!metaproperty.isReadable()))
+                continue;
+            json.insert(field, QJsonValue::fromVariant(object->property(name)));
+        }
+        return json;
+    }
+
+    static QJsonObject JsonArrayToJsonObject(const QJsonArray& array) {
+        const QJsonDocument doc(array);
+        return doc.object();
+    }
+
+    static void JsonObjectToObject(const QJsonObject &json, QObject *object) {
+        const QMetaObject *metaobject = object->metaObject();
+        const int count = metaobject->propertyCount();
+        for (QJsonObject::const_iterator iter = json.begin(); iter != json.end(); ++iter) {
+            const QByteArray field = iter.key().toLatin1();
+            const int index =  metaobject->indexOfProperty(field);
+            if (index < 0 || index >= count)
+                continue;
+            const QMetaProperty metaproperty = metaobject->property( index );
+            const QVariant::Type type = metaproperty.type();
+            QVariant v = iter.value().toVariant();
+            if (v.canConvert(type)) {
+                v.convert(type);
+                metaproperty.write(object, v);
+            } else if (QString(QLatin1String("QVariant")).compare(QLatin1String(metaproperty.typeName())) == 0) {
+                metaproperty.write(object, v);
+            }
+        }
+    }
+
+    template<class Object>
+    static QJsonArray ObjectSetToJsonArray(const QSet<const Object*>& set) {
+        QJsonArray array;
+        foreach (const Object* t, set) {
+            const QJsonObject obj = JsonHelper::ObjectToJsonObject(t);
+            array.append(obj);
+        }
+        return array;
+    }
+}
+
+
+const char *QMixpanel::EngineApi = "http://api.mixpanel.com/engine/";
+const char *QMixpanel::TrackApi = "http://api.mixpanel.com/track/";
 QMixpanel *QMixpanel::_instance = Q_NULLPTR;
 QMixpanel *QMixpanel::instance(QObject *object) {
     if (!_instance) {
@@ -47,7 +99,7 @@ void QMixpanel::flushProfiles() {
     _isSyncingProfiles = true;
     const ProfilesContainer tmp = _profileSet;
     const QJsonArray array = JsonHelper::ObjectSetToJsonArray<QMixpanelProfile>(tmp);
-    QNetworkReply* reply = networkReplyHelper(API_ENTRY_ENGINE, JsonHelper::JsonArrayToJsonObject(array));
+    QNetworkReply* reply = networkReplyHelper(EngineApi, JsonHelper::JsonArrayToJsonObject(array));
     connect(reply, &QNetworkReply::finished, [&, reply]() {
         const QByteArray data = reply->readAll();
         const int response = data.toInt();
@@ -70,7 +122,7 @@ void QMixpanel::flushEvents() {
     _isSyncingEvents = true;
     const EventsContainer tmp = _eventSet;
     const QJsonArray array = JsonHelper::ObjectSetToJsonArray<QMixpanelEvent>(tmp);
-    QNetworkReply* reply = networkReplyHelper(API_ENTRY_TRACK, JsonHelper::JsonArrayToJsonObject(array));
+    QNetworkReply* reply = networkReplyHelper(TrackApi, JsonHelper::JsonArrayToJsonObject(array));
     connect(reply, &QNetworkReply::finished, [&, reply]() {
         const QByteArray data = reply->readAll();
         const int response = data.toInt();
@@ -90,7 +142,7 @@ void QMixpanel::flushEvents() {
 
 void QMixpanel::postProfileHelper(const QMixpanelProfile& profile) {
     const QJsonObject obj = JsonHelper::ObjectToJsonObject(&profile);
-    QNetworkReply* reply = networkReplyHelper(API_ENTRY_ENGINE, obj);
+    QNetworkReply* reply = networkReplyHelper(EngineApi, obj);
 
     connect(reply, &QNetworkReply::finished, [&, reply]() {
         const QByteArray data = reply->readAll();
@@ -107,7 +159,7 @@ void QMixpanel::postProfileHelper(const QMixpanelProfile& profile) {
 
 void QMixpanel::postEventHelper(const QMixpanelEvent& event) {
     const QJsonObject obj = JsonHelper::ObjectToJsonObject(&event);
-    QNetworkReply* reply = networkReplyHelper(API_ENTRY_TRACK, obj);
+    QNetworkReply* reply = networkReplyHelper(TrackApi, obj);
 
     connect(reply, &QNetworkReply::finished, [reply]() {
         const QByteArray data = reply->readAll();
@@ -125,7 +177,7 @@ void QMixpanel::postEventHelper(const QMixpanelEvent& event) {
 
 QNetworkReply* QMixpanel::networkReplyHelper(const QString &API, const QJsonObject &obj) {
     const QJsonDocument doc = QJsonDocument(obj);
-    const QByteArray base64 = doc.toJson().toBase64();
+    const QByteArray base64 = "?data=" + doc.toJson().toBase64();
     const QNetworkRequest request(API + base64);
     QNetworkAccessManager* netAccessManager = new QNetworkAccessManager(this);
     return netAccessManager->get(request);
