@@ -30,7 +30,11 @@ public slots:
 private slots:
     void flushEvents();
     void flushProfiles();
-
+signals:
+    void errorSendingProfile(const QMixpanelProfile& profile, QNetworkReply::NetworkError error) const;
+    void errorSendingEvent(const QMixpanelEvent& event, QNetworkReply::NetworkError error) const;
+    void successSendingProfile(const QMixpanelProfile& profile) const;
+    void successSendingEvent(const QMixpanelEvent& event) const;
 private:
     using ProfilesContainer = QSet<const QMixpanelProfile*>;
     using EventsContainer = QSet<const QMixpanelEvent*>;
@@ -67,15 +71,9 @@ public:
     inline QString event() const { return _event; }
     inline QString token() const { return _token; }
     inline QString distinctId() const { return _distinctId; }
-    inline bool operator==(const QMixpanelEvent& other) const {
-        return other.time() == _time
-                && other.distinctId() == _distinctId
-                && other.token() == _token;
-    }
     inline bool operator<(const QMixpanelEvent& other) const {
         return _time < other.time();
     }
-
     void setTime(const qlonglong &time) { _time = time; }
     void setEvent(const QString &event) { _event = event; }
     void setToken(const QString &token) { _token = token; }
@@ -92,11 +90,6 @@ protected:
     QString         _distinctId;
     QVariantMap     _properties;
 };
-
-inline uint qHash(const QMixpanelEvent& other) {
-    return other.time();
-}
-
 
 class QMixpanelProfile : public QMixpanelEvent {
     Q_OBJECT

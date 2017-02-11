@@ -173,16 +173,17 @@ bool QMixpanel::postProfileHelper(const QMixpanelProfile* profile) {
     const QJsonObject obj = JsonHelper::ObjectToJsonObject(profile);
     QNetworkReply* reply = networkReplyHelper(EngineApi, obj);
 
-    connect(reply, &QNetworkReply::finished, [&, reply]() {
+    connect(reply, &QNetworkReply::finished, [&, profile]() {
         const QByteArray data = reply->readAll();
         const int response = data.toInt();
         Q_UNUSED(response);
         reply->deleteLater();
+        emit successSendingProfile(*profile);
     });
 
-    connect(reply, static_cast<void (QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error), [reply](const QNetworkReply::NetworkError error){
-        Q_UNUSED(error);
+    connect(reply, static_cast<void (QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error), [&, profile](const QNetworkReply::NetworkError error){
         reply->deleteLater();
+        emit errorSendingProfile(*profile, error);
     });
     return reply->isRunning() || reply->isFinished();
 }
@@ -191,16 +192,17 @@ bool QMixpanel::postEventHelper(const QMixpanelEvent* event) {
     const QJsonObject obj = JsonHelper::ObjectToJsonObject(event);
     QNetworkReply* reply = networkReplyHelper(TrackApi, obj);
 
-    connect(reply, &QNetworkReply::finished, [reply]() {
+    connect(reply, &QNetworkReply::finished, [&, event]() {
         const QByteArray data = reply->readAll();
         const int response = data.toInt();
         Q_UNUSED(response);
         reply->deleteLater();
+        emit successSendingEvent(*event);
     });
 
-    connect(reply, static_cast<void (QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error), [reply](QNetworkReply::NetworkError error){
-        Q_UNUSED(error);
+    connect(reply, static_cast<void (QNetworkReply::*)(QNetworkReply::NetworkError)>(&QNetworkReply::error), [&, event](QNetworkReply::NetworkError error){
         reply->deleteLater();
+        emit errorSendingEvent(*event, error);
     });
     return reply->isRunning() || reply->isFinished();
 }
