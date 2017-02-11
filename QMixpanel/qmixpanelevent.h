@@ -19,8 +19,8 @@ public:
     inline QString distinctId() const { return _distinctId; }
     inline bool operator==(const QMixpanelEvent& other) const {
         return other.time() == _time
-                && other.event() == _event
-                && other.properties() == _properties;
+                && other.distinctId() == _distinctId
+                && other.token() == _token;
     }
     inline bool operator<(const QMixpanelEvent& other) const {
         return _time < other.time();
@@ -28,10 +28,14 @@ public:
 
     void setTime(const qlonglong &time) { _time = time; }
     void setEvent(const QString &event) { _event = event; }
-    void setProperties(const QVariantMap &properties) { _properties = properties; }
     void setToken(const QString &token) { _token = token; }
     void setDistinctId(const QString &distinctId) { _distinctId = distinctId; }
-private:
+    void setProperties(const QVariantMap &properties) {
+        for (QVariantMap::const_iterator iter = properties.begin(); iter != properties.end(); ++iter) {
+            _properties.insert(iter.key(), iter.value());
+        }
+    }
+protected:
     qlonglong       _time;
     QString         _event;
     QString         _token;

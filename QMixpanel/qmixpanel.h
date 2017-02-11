@@ -11,20 +11,17 @@ class QMixpanel : public QObject {
     Q_OBJECT
 public:
     static QMixpanel* instance(QObject* object = Q_NULLPTR);
-
-    inline QString token() const { return _token; }
-    inline QString distinctId() const { return _distinctId;}
     inline bool isSyncingEvents() const { return _isSyncingEvents; }
     inline bool isSyncingProfiles() const { return _isSyncingProfiles; }
 
+public slots:
     void insertProfile(const QMixpanelProfile& profile, bool instantSync = false);
     void insertEvent(const QMixpanelEvent& event, bool instantSync = false);
-    void setToken(const QString &token);
-    void setDistinctId(const QString &distinctId);
 
 private slots:
     void flushEvents();
     void flushProfiles();
+
 private:
     using ProfilesContainer = QSet<const QMixpanelProfile*>;
     using EventsContainer = QSet<const QMixpanelEvent*>;
@@ -35,11 +32,8 @@ private:
 
     bool                    _isSyncingEvents;
     bool                    _isSyncingProfiles;
-    QString                 _token;
-    QString                 _distinctId;
     ProfilesContainer       _profileSet;
     EventsContainer         _eventSet;
-
 
 
     void postEventHelper(const QMixpanelEvent &event);

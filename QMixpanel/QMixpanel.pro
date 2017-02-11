@@ -15,7 +15,6 @@ DEFINES += QMIXPANEL_LIBRARY
 
 
 HEADERS += qmixpanel.h\
-        qmixpanel_global.h \
     util.h \
     qmixpanelprofile.h \
     qmixpanelevent.h

@@ -25,14 +25,6 @@ QMixpanel::QMixpanel(QObject* object) : QObject(object) {
 
 }
 
-void QMixpanel::setDistinctId(const QString &distinctId) {
-    _distinctId = distinctId;
-}
-
-void QMixpanel::setToken(const QString &token) {
-    _token = token;
-}
-
 void QMixpanel::insertProfile(const QMixpanelProfile &profile, bool instantSync) {
     if (instantSync) {
         postProfileHelper(profile);
