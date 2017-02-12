@@ -27,6 +27,9 @@ public slots:
     bool insertProfile(QMixpanelProfile* profile, bool instantSync = false, bool validate = true);
     bool insertEvent(QMixpanelEvent* event, bool instantSync = false, bool validate = true);
 
+    bool save(const QString& path) const;
+    bool load(const QString& path);
+
 private slots:
     void flushEvents();
     void flushProfiles();

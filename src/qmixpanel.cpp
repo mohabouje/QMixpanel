@@ -8,6 +8,7 @@
 #include <QNetworkAccessManager>
 #include <QNetworkReply>
 #include <QTimer>
+#include <QFile>
 
 namespace JsonHelper {
 
@@ -31,7 +32,7 @@ namespace JsonHelper {
         return doc.object();
     }
 
-    static void JsonObjectToObject(const QJsonObject &json, QObject *object) {
+    static void JsonObjectToObject(QObject *object, const QJsonObject &json) {
         const QMetaObject *metaobject = object->metaObject();
         const int count = metaobject->propertyCount();
         for (QJsonObject::const_iterator iter = json.begin(); iter != json.end(); ++iter) {
@@ -60,6 +61,20 @@ namespace JsonHelper {
         }
         return array;
     }
+
+    template<class Object>
+    static QSet<const Object*> JsonArrayToObjectSet(const QJsonArray& array) {
+        QSet<const Object*> set;
+        foreach (const QJsonValue& val, array) {
+            const QJsonObject json = val.toObject();
+            Object* obj = new Object();
+            JsonObjectToObject(obj, json);
+            set.insert(obj);
+        }
+        return set;
+    }
+
+
 }
 
 
@@ -114,6 +129,45 @@ bool QMixpanel::insertEvent(QMixpanelEvent* event, bool instantSync, bool valida
     const bool success = instantSync ? postEventHelper(event) : (_eventSet.insert(event) != _eventSet.end());
     flushEvents();
     return success;
+}
+
+
+template<class Object>
+static bool saveInFile(const QString& filePath, const QSet<const Object*> list) {
+    QFile file(filePath);
+    if (file.open(QIODevice::WriteOnly)) {
+        const QJsonArray array = JsonHelper::ObjectSetToJsonArray<Object>(list);
+        const QJsonDocument doc(array);
+        file.write(doc.toJson());
+        file.close();
+        return true;
+    }
+    return false;
+}
+
+template<class Object>
+static bool loadFromFile(const QString& filePath, QSet<const Object*>& set) {
+    QFile file(filePath);
+    if (file.open(QIODevice::ReadOnly)) {
+        const QByteArray bytes = file.readAll();
+        const QJsonDocument doc = QJsonDocument::fromBinaryData(bytes);
+        const QJsonArray array = doc.array();
+        file.close();
+        set = JsonHelper::JsonArrayToObjectSet<Object>(array);
+        return true;
+    }
+    return false;
+}
+
+bool QMixpanel::save(const QString &path) const {
+    return saveInFile<QMixpanelEvent>(path + "events.json", _eventSet)
+            && saveInFile<QMixpanelProfile>(path + "profiles.json", _profileSet);
+
+}
+
+bool QMixpanel::load(const QString &path) {
+    return loadFromFile<QMixpanelEvent>(path + "events.json", _eventSet)
+            && loadFromFile<QMixpanelProfile>(path + "profiles.json", _profileSet);
 }
 
 void QMixpanel::flushProfiles() {
